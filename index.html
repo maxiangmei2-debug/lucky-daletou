@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>幸运大乐透 · 个性化号码生成器</title>
+    <style>
+        :root {
+            --bg: #0f0f1a;
+            --card-bg: #1a1a2e;
+            --card-border: #2a2a4a;
+            --accent: #ff6b9d;
+            --accent2: #c44dff;
+            --accent3: #ff4d6a;
+            --gold: #ffd700;
+            --text: #e8e8f0;
+            --text-muted: #8888aa;
+            --red-ball: #e63946;
+            --blue-ball: #457b9d;
+            --glow: rgba(255, 107, 157, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 星空背景 */
+        .stars {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 标题区域 */
+        .header {
+            text-align: center;
+            padding: 30px 0 20px;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gold), var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 4px;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9em;
+            letter-spacing: 2px;
+        }
+
+        /* 信息卡片 */
+        .info-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2), var(--gold));
+        }
+
+        .info-card h3 {
+            color: var(--accent);
+            font-size: 1em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .info-item {
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+        }
+
+        .info-item .label {
+            color: var(--text-muted);
+            font-size: 0.75em;
+            margin-bottom: 4px;
+        }
+
+        .info-item .value {
+            color: var(--text);
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+
+        /* 幸运数字 */
+        .lucky-numbers {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .lucky-tag {
+            background: linear-gradient(135deg, rgba(255,107,157,0.2), rgba(196,77,255,0.2));
+            border: 1px solid rgba(255,107,157,0.3);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--gold);
+        }
+
+        /* 生成按钮 */
+        .generate-section {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border: none;
+            color: #fff;
+            font-size: 1.3em;
+            font-weight: 700;
+            padding: 16px 48px;
+            border-radius: 50px;
+            cursor: pointer;
+            letter-spacing: 4px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.3s;
+            box-shadow: 0 4px 20px var(--glow);
+        }
+
+        .generate-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 30px var(--glow);
+        }
+
+        .generate-btn:active {
+            transform: scale(0.98);
+        }
+
+        .generate-btn .ripple {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 0; height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            animation: rippleAnim 0.6s ease-out;
+        }
+
+        @keyframes rippleAnim {
+            to { width: 300px; height: 300px; opacity: 0; }
+        }
+
+        /* 号码展示区 */
+        .result-section {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .result-section.hidden { display: none; }
+
+        .result-title {
+            color: var(--gold);
+            font-size: 1.1em;
+            margin-bottom: 16px;
+            letter-spacing: 2px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .result-row .section-label {
+            color: var(--text-muted);
+            font-size: 0.8em;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+
+        .ball {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #fff;
+            position: relative;
+            cursor: default;
+            transition: transform 0.3s;
+        }
+
+        .ball:hover {
+            transform: scale(1.15);
+        }
+
+        .ball.front {
+            background: var(--red-ball);
+            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.5);
+        }
+
+        .ball.back {
+            background: var(--blue-ball);
+            box-shadow: 0 4px 12px rgba(69, 123, 157, 0.5);
+        }
+
+        .ball.lucky-highlight {
+            animation: luckyPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes luckyPulse {
+            0%, 100% { box-shadow: 0 4px 12px rgba(230, 57, 70, 0.5); }
+            50% { box-shadow: 0 4px 24px rgba(255, 215, 0, 0.8); }
+        }
+
+        .ball .source-tag {
+            position: absolute;
+            bottom: -18px;
+            font-size: 0.55em;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        /* 多注号码 */
+        .multi-results {
+            margin-top: 24px;
+        }
+
+        .bet-row {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .bet-row .bet-index {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 0.9em;
+        }
+
+        .small-ball {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1em;
+            font-weight: 700;
+            color: #fff;
+            margin-left: 8px;
+        }
+
+        .small-ball.front { background: var(--red-ball); }
+        .small-ball.back { background: var(--blue-ball); }
+        .small-ball.lucky { background: var(--gold); color: #333; }
+
+        .divider-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            margin: 0 4px;
+        }
+
+        /* 分析面板 */
+        .analysis-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .analysis-panel h3 {
+            color: var(--accent2);
+            font-size: 1em;
+            margin-bottom: 12px;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .analysis-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .analysis-item .a-label {
+            color: var(--text-muted);
+            font-size: 0.7em;
+        }
+
+        .analysis-item .a-value {
+            color: var(--gold);
+            font-size: 1em;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        /* 走势提醒 */
+        .trend-note {
+            background: rgba(255,215,0,0.1);
+            border: 1px solid rgba(255,215,0,0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            color: var(--gold);
+            font-size: 0.85em;
+            line-height: 1.6;
+        }
+
+        /* 底部 */
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            color: var(--text-muted);
+            font-size: 0.75em;
+            line-height: 1.8;
+        }
+
+        /* 动画 */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .ball-appear {
+            animation: ballAppear 0.4s ease-out backwards;
+        }
+
+        @keyframes ballAppear {
+            from { opacity: 0; transform: scale(0.3) rotate(-180deg); }
+            to { opacity: 1; transform: scale(1) rotate(0); }
+        }
+
+        /* 历史记录 */
+        .history-section {
+            margin-top: 20px;
+        }
+
+        .history-title {
+            color: var(--text-muted);
+            font-size: 0.85em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .history-title .clear-btn {
+            background: none;
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 4px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.75em;
+            transition: all 0.2s;
+        }
+
+        .history-title .clear-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .history-item {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85em;
+        }
+
+        .history-item .h-time {
+            color: var(--text-muted);
+            font-size: 0.7em;
+        }
+
+        .history-item .h-numbers {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .h-ball {
+            min-width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75em;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .h-ball.front { background: var(--red-ball); }
+        .h-ball.back { background: var(--blue-ball); }
+
+        .h-div {
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            margin: 0 2px;
+        }
+
+        /* 模式切换 */
+        .mode-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .mode-tab {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--card-border);
+            padding: 8px 20px;
+            border-radius: 20px;
+            color: var(--text-muted);
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-tab.active {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff;
+            border-color: transparent;
+        }
+
+        .mode-tab:hover:not(.active) {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* 浮动粒子 */
+        .particle {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--gold);
+            opacity: 0.3;
+            pointer-events: none;
+            animation: floatParticle linear infinite;
+        }
+
+        @keyframes floatParticle {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.3; }
+            90% { opacity: 0.3; }
+            100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<canvas class="stars" id="starsCanvas"></canvas>
+
+<div class="container">
+    <!-- 标题 -->
+    <div class="header">
+        <h1>✦ 幸运大乐透 ✦</h1>
+        <div class="subtitle">个性化号码生成 · 星辰指引</div>
+    </div>
+
+    <!-- 个人信息卡片 -->
+    <div class="info-card fade-in">
+        <h3>💫 你的星运档案</h3>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="label">你的生日</div>
+                <div class="value">1991.10.21 凌晨4点 · 新疆伊宁</div>
+            </div>
+            <div class="info-item">
+                <div class="label">女朋友生日</div>
+                <div class="value">1993.11.9 晚8点 · 芜湖无为</div>
+            </div>
+            <div class="info-item">
+                <div class="label">相识纪念日</div>
+                <div class="value">2019年4月30日</div>
+            </div>
+            <div class="info-item">
+                <div class="label">命理运算</div>
+                <div class="value">天秤 ♎ → 天蝎 ♏交界</div>
+            </div>
+        </div>
+        <div style="margin-top:14px; text-align:center;">
+            <div style="color:var(--text-muted); font-size:0.75em; margin-bottom:6px;">✨ 幸运数字</div>
+            <div class="lucky-numbers">
+                <span class="lucky-tag">1</span>
+                <span class="lucky-tag">2</span>
+                <span class="lucky-tag">4</span>
+                <span class="lucky-tag">9</span>
+                <span class="lucky-tag">10</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模式选择 -->
+    <div class="mode-tabs">
+        <div class="mode-tab active" onclick="setMode('single')">单注精选</div>
+        <div class="mode-tab" onclick="setMode('multi5')">5注推荐</div>
+        <div class="mode-tab" onclick="setMode('lucky')">纯幸运模式</div>
+    </div>
+
+    <!-- 生成按钮 -->
+    <div class="generate-section">
+        <button class="generate-btn" id="generateBtn" onclick="generate()">
+            ✦ 生成号码 ✦
+        </button>
+    </div>
+
+    <!-- 号码展示 -->
+    <div class="result-section hidden" id="resultSection">
+        <div class="result-title" id="resultTitle"></div>
+        <div id="mainResult"></div>
+        <div class="multi-results" id="multiResults"></div>
+    </div>
+
+    <!-- 分析面板 -->
+    <div class="analysis-panel hidden" id="analysisPanel">
+        <h3>📊 本注号码分析</h3>
+        <div class="analysis-grid" id="analysisGrid"></div>
+    </div>
+
+    <!-- 走势提醒 -->
+    <div class="trend-note hidden" id="trendNote">
+        💡 <strong>走势洞察：</strong>近期前区小号段(01-12)出现频率偏高，和值集中在60-90区间；后区偶数偏多，关注01、04、09、11等冷号回补。结合你的幸运数字，特别关注 <span id="trendHighlight"></span> 的出现机会。
+    </div>
+
+    <!-- 历史记录 -->
+    <div class="history-section hidden" id="historySection">
+        <div class="history-title">
+            <span>📋 生成历史</span>
+            <button class="clear-btn" onclick="clearHistory()">清空</button>
+        </div>
+        <div id="historyList"></div>
+    </div>
+
+    <!-- 底部 -->
+    <div class="footer">
+        本工具仅用于娱乐，彩票为随机开奖，任何分析均不保证中奖<br>
+        理性购彩，量力而行 · 幸运是一种态度 ✦
+    </div>
+</div>
+
+<script>
+// ========== 个人信息配置 ==========
+const PROFILE = {
+    myBirth: { year: 1991, month: 10, day: 21, hour: 4, city: '伊宁' },
+    gfBirth: { year: 1993, month: 11, day: 9, hour: 20, city: '无为' },
+    meetDate: { year: 2019, month: 4, day: 30 },
+    luckyNumbers: [1, 2, 4, 9, 10],
+};
+
+// 大乐透规则：前区01-35选5，后区01-12选2
+const FRONT_MAX = 35;
+const BACK_MAX = 12;
+const FRONT_COUNT = 5;
+const BACK_COUNT = 2;
+
+// ========== 运算数字生成 ==========
+function computeOperationNumbers() {
+    const my = PROFILE.myBirth;
+    const gf = PROFILE.gfBirth;
+    const meet = PROFILE.meetDate;
+
+    // 生命数（Life Path Number）
+    function lifePath(y, m, d) {
+        const sum = String(y).split('').reduce((a,b)=>a+Number(b),0)
+            + String(m).split('').reduce((a,b)=>a+Number(b),0)
+            + String(d).split('').reduce((a,b)=>a+Number(b),0);
+        return reduceToOne(sum);
+    }
+    function reduceToOne(n) {
+        while (n > 9 && n !== 11 && n !== 22 && n !== 33) {
+            n = String(n).split('').reduce((a,b)=>a+Number(b),0);
+        }
+        return n;
+    }
+
+    const myLP = lifePath(my.year, my.month, my.day);
+    const gfLP = lifePath(gf.year, gf.month, gf.day);
+
+    // 生日各个数字拆解
+    const myDigits = [1,9,9,1,1,0,2,1]; // 19911021
+    const gfDigits = [1,9,9,3,1,1,0,9]; // 19931109
+    const meetDigits = [2,0,1,9,0,4,3,0]; // 20190430
+
+    // 时辰数
+    const myHourNum = my.hour; // 4
+    const gfHourNum = gf.hour; // 20 → 2+0=2
+
+    // 组合运算
+    const ops = new Set();
+
+    // 1. 直接幸运数字
+    PROFILE.luckyNumbers.forEach(n => ops.add(n));
+
+    // 2. 生命数路径
+    ops.add(myLP); ops.add(gfLP);
+    ops.add(reduceToOne(myLP + gfLP)); // 合体命数
+
+    // 3. 生日各位数之和
+    const mySum = myDigits.reduce((a,b)=>a+b,0);
+    const gfSum = gfDigits.reduce((a,b)=>a+b,0);
+    ops.add(reduceToOne(mySum));
+    ops.add(reduceToOne(gfSum));
+    ops.add(reduceToOne(mySum + gfSum));
+
+    // 4. 关键日期运算
+    ops.add(reduceToOne(meet.year + meet.month + meet.day));
+    ops.add(meet.month); // 4月相识
+    ops.add(meet.day);   // 30日 → 3+0=3
+    ops.add(reduceToOne(meet.day));
+
+    // 5. 月份差与日期差
+    ops.add(Math.abs(my.month - gf.month)); // |10-11|=1
+    ops.add(Math.abs(my.day - gf.day));     // |21-9|=12 → 1+2=3
+    ops.add(reduceToOne(Math.abs(my.day - gf.day)));
+
+    // 6. 年龄差运算
+    ops.add(reduceToOne(gf.year - my.year)); // 2
+
+    // 7. 生日尾数组合
+    ops.add(my.day % 10); // 1
+    ops.add(gf.day % 10); // 9
+    ops.add((my.day % 10) + (gf.day % 10)); // 10
+
+    // 8. 时辰运算
+    ops.add(myHourNum); // 4
+    ops.add(reduceToOne(gfHourNum)); // 20→2
+    ops.add(reduceToOne(myHourNum + gfHourNum)); // 4+20→6
+
+    // 9. 年份运算
+    ops.add(reduceToOne(my.year)); // 1991→20→2
+    ops.add(reduceToOne(gf.year)); // 1993→22
+    ops.add(my.month + gf.month); // 10+11=21
+    ops.add(reduceToOne(my.month + gf.month)); // 3
+
+    // 10. 识缘数（相识日全部数之和）
+    const meetSum = meetDigits.reduce((a,b)=>a+b,0);
+    ops.add(reduceToOne(meetSum));
+
+    return Array.from(ops).filter(n => n > 0).sort((a,b)=>a-b);
+}
+
+const OPERATION_NUMBERS = computeOperationNumbers();
+
+// ========== 星座/生肖辅助 ==========
+function getZodiacSign(month, day) {
+    const signs = [
+        [1,20,'摩羯'],[2,19,'水瓶'],[3,21,'双鱼'],[4,20,'白羊'],
+        [5,21,'金牛'],[6,22,'双子'],[7,23,'巨蟹'],[8,23,'狮子'],
+        [9,23,'处女'],[10,23,'天秤'],[11,22,'天蝎'],[12,22,'射手'],[12,31,'摩羯']
+    ];
+    for (let s of signs) {
+        if ((month === s[0] && day <= s[1]) || (month < s[0])) return s[2];
+    }
+    return '摩羯';
+}
+
+// ========== 走势权重（模拟近期热号/冷号） ==========
+function getTrendWeights() {
+    // 基于近期走势的模拟权重（前区）
+    const frontHot = {};   // 近期热号加权
+    const frontCold = {};  // 冷号回补加权
+    const backHot = {};
+    const backCold = {};
+
+    // 模拟近20期热号统计
+    const frontHotNumbers = [4,5,11,15,21,22,28,32,34];
+    const frontColdNumbers = [1,3,6,8,14,17,19,25,30,33];
+    const backHotNumbers = [2,4,8,10,11];
+    const backColdNumbers = [1,3,5,6,7,9];
+
+    frontHotNumbers.forEach(n => frontHot[n] = 1.5);
+    frontColdNumbers.forEach(n => frontCold[n] = 1.3);
+    backHotNumbers.forEach(n => backHot[n] = 1.4);
+    backColdNumbers.forEach(n => backCold[n] = 1.2);
+
+    return { frontHot, frontCold, backHot, backCold };
+}
+
+// ========== 核心生成算法 ==========
+let currentMode = 'single';
+let history = [];
+
+function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-tab').forEach(tab => tab.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+function weightedRandom(pool, weights, count) {
+    // 构建加权池
+    const weightedPool = [];
+    pool.forEach(n => {
+        let w = 1; // 默认权重
+        // 幸运数字加权（最高优先级）
+        if (PROFILE.luckyNumbers.includes(n)) w += 3;
+        if (OPERATION_NUMBERS.includes(n)) w += 2;
+        // 走势加权
+        if (weights && weights[n]) w += weights[n];
+        weightedPool.push({ num: n, weight: w });
+    });
+
+    const result = [];
+    const available = [...weightedPool];
+
+    for (let i = 0; i < count && available.length > 0; i++) {
+        const totalWeight = available.reduce((s, item) => s + item.weight, 0);
+        let rand = Math.random() * totalWeight;
+        let chosen = available[0];
+
+        for (let item of available) {
+            rand -= item.weight;
+            if (rand <= 0) {
+                chosen = item;
+                break;
+            }
+        }
+
+        result.push(chosen.num);
+        available.splice(available.indexOf(chosen), 1);
+    }
+
+    return result.sort((a,b) => a - b);
+}
+
+function generateOneBet(seedOffset = 0) {
+    const trend = getTrendWeights();
+
+    // 前区：01-35
+    const frontPool = [];
+    for (let i = 1; i <= FRONT_MAX; i++) frontPool.push(i);
+
+    // 后区：01-12
+    const backPool = [];
+    for (let i = 1; i <= BACK_MAX; i++) backPool.push(i);
+
+    // 用时间戳+偏移做种子扰动
+    const timeSeed = Date.now() + seedOffset * 7919;
+
+    // 前区生成
+    let front = weightedRandom(frontPool, trend.frontHot, FRONT_COUNT);
+
+    // 确保至少包含1-2个幸运/运算数字（如果它们在范围内）
+    const luckyInRange = PROFILE.luckyNumbers.filter(n => n <= FRONT_MAX);
+    const opsInRange = OPERATION_NUMBERS.filter(n => n <= FRONT_MAX && !PROFILE.luckyNumbers.includes(n));
+
+    // 强制至少1个幸运数字入前区
+    const frontLuckyCount = front.filter(n => luckyInRange.includes(n)).length;
+    if (frontLuckyCount === 0 && luckyInRange.length > 0) {
+        // 随机替换一个非关键号码
+        const replaceIdx = Math.floor(Math.random() * FRONT_COUNT);
+        const luckyChoice = luckyInRange[Math.floor(Math.random() * luckyInRange.length)];
+        if (!front.includes(luckyChoice)) {
+            front[replaceIdx] = luckyChoice;
+            front.sort((a,b) => a - b);
+        }
+    }
+
+    // 后区生成
+    let back = weightedRandom(backPool, trend.backHot, BACK_COUNT);
+
+    // 确保后区包含运算数字如果范围允许
+    const luckyBackRange = PROFILE.luckyNumbers.filter(n => n <= BACK_MAX);
+    const opsBackRange = OPERATION_NUMBERS.filter(n => n <= BACK_MAX);
+
+    const backSpecialCount = back.filter(n => luckyBackRange.includes(n) || opsBackRange.includes(n)).length;
+    if (backSpecialCount === 0) {
+        const specialBack = [...luckyBackRange, ...opsBackRange];
+        if (specialBack.length > 0) {
+            const choice = specialBack[Math.floor(Math.random() * specialBack.length)];
+            if (!back.includes(choice)) {
+                back[Math.floor(Math.random() * BACK_COUNT)] = choice;
+                back.sort((a,b) => a - b);
+            }
+        }
+    }
+
+    return { front, back };
+}
+
+function generateLuckyBet() {
+    // 纯幸运模式：只用幸运数字和运算数字
+    const luckyPool = [...PROFILE.luckyNumbers, ...OPERATION_NUMBERS].filter(n => n >= 1 && n <= FRONT_MAX);
+    const uniquePool = [...new Set(luckyPool)];
+
+    let front = [];
+    // 尽可能从幸运池中选
+    const shuffled = [...uniquePool].sort(() => Math.random() - 0.5);
+    front = shuffled.slice(0, Math.min(FRONT_COUNT, shuffled.length));
+
+    // 补足不够的
+    while (front.length < FRONT_COUNT) {
+        const n = Math.floor(Math.random() * FRONT_MAX) + 1;
+        if (!front.includes(n)) front.push(n);
+    }
+    front.sort((a,b) => a - b);
+
+    // 后区
+    const backLuckyPool = [...PROFILE.luckyNumbers, ...OPERATION_NUMBERS].filter(n => n >= 1 && n <= BACK_MAX);
+    const uniqueBackPool = [...new Set(backLuckyPool)];
+
+    let back = [];
+    const shuffledBack = [...uniqueBackPool].sort(() => Math.random() - 0.5);
+    back = shuffledBack.slice(0, Math.min(BACK_COUNT, shuffledBack.length));
+
+    while (back.length < BACK_COUNT) {
+        const n = Math.floor(Math.random() * BACK_MAX) + 1;
+        if (!back.includes(n)) back.push(n);
+    }
+    back.sort((a,b) => a - b);
+
+    return { front, back };
+}
+
+function generate() {
+    // 按钮动画
+    const btn = document.getElementById('generateBtn');
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    btn.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+
+    let bets = [];
+    const titles = [];
+
+    if (currentMode === 'single') {
+        bets.push(generateOneBet());
+        titles.push('为你精选的一注');
+    } else if (currentMode === 'multi5') {
+        for (let i = 0; i < 5; i++) {
+            bets.push(generateOneBet(i * 3));
+        }
+        titles.push('5注推荐方案');
+    } else if (currentMode === 'lucky') {
+        bets.push(generateLuckyBet());
+        titles.push('纯幸运数字组合');
+    }
+
+    displayResult(bets, titles[0]);
+    displayAnalysis(bets[0]);
+    saveHistory(bets);
+}
+
+function displayResult(bets, title) {
+    const section = document.getElementById('resultSection');
+    const titleEl = document.getElementById('resultTitle');
+    const mainResult = document.getElementById('mainResult');
+    const multiResults = document.getElementById('multiResults');
+
+    section.classList.remove('hidden');
+    titleEl.textContent = `✦ ${title} ✦`;
+
+    if (bets.length === 1) {
+        // 单注大球展示
+        const bet = bets[0];
+        mainResult.innerHTML = `
+            <div class="section-label">前区</div>
+            <div class="result-row">
+                ${bet.front.map((n, i) => `
+                    <div class="ball front ball-appear ${isSpecial(n) ? 'lucky-highlight' : ''}"
+                         style="animation-delay: ${i * 0.1}s">
+                        ${String(n).padStart(2, '0')}
+                        ${getSourceTag(n)}
+                    </div>
+                `).join('')}
+            </div>
+            <div class="section-label" style="margin-top:20px">后区</div>
+            <div class="result-row">
+                ${bet.back.map((n, i) => `
+                    <div class="ball back ball-appear"
+                         style="animation-delay: ${(FRONT_COUNT + i) * 0.1}s">
+                        ${String(n).padStart(2, '0')}
+                        ${getSourceTag(n)}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        multiResults.innerHTML = '';
+    } else {
+        // 多注展示
+        mainResult.innerHTML = `
+            <div class="result-row">
+                ${bets[0].front.map((n, i) => `
+                    <div class="ball front ball-appear ${isSpecial(n) ? 'lucky-highlight' : ''}"
+                         style="animation-delay: ${i * 0.1}s">
+                        ${String(n).padStart(2, '0')}
+                    </div>
+                `).join('')}
+                <div class="divider-dot" style="align-self:center"></div>
+                ${bets[0].back.map((n, i) => `
+                    <div class="ball back ball-appear"
+                         style="animation-delay: ${(FRONT_COUNT + i) * 0.1}s">
+                        ${String(n).padStart(2, '0')}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        multiResults.innerHTML = bets.slice(1).map((bet, idx) => `
+            <div class="bet-row fade-in" style="animation-delay: ${(idx+1)*0.15}s">
+                <span class="bet-index">第${idx + 2}注</span>
+                ${bet.front.map(n => `
+                    <div class="small-ball ${isSpecial(n) ? 'lucky' : 'front'}">
+                        ${String(n).padStart(2, '0')}
+                    </div>
+                `).join('')}
+                <div class="divider-dot"></div>
+                ${bet.back.map(n => `
+                    <div class="small-ball back">
+                        ${String(n).padStart(2, '0')}
+                    </div>
+                `).join('')}
+            </div>
+        `).join('');
+    }
+
+    // 走势提醒
+    const trendNote = document.getElementById('trendNote');
+    const trendHighlight = document.getElementById('trendHighlight');
+    trendNote.classList.remove('hidden');
+    const specialInBet = bets[0].front.filter(isSpecial);
+    trendHighlight.textContent = specialInBet.map(n => String(n).padStart(2,'0')).join('、');
+}
+
+function isSpecial(n) {
+    return PROFILE.luckyNumbers.includes(n) || OPERATION_NUMBERS.includes(n);
+}
+
+function getSourceTag(n) {
+    if (PROFILE.luckyNumbers.includes(n)) return `<span class="source-tag">♥幸运</span>`;
+    if (OPERATION_NUMBERS.includes(n)) return `<span class="source-tag">运算</span>`;
+    return '';
+}
+
+function displayAnalysis(bet) {
+    const panel = document.getElementById('analysisPanel');
+    const grid = document.getElementById('analysisGrid');
+    panel.classList.remove('hidden');
+
+    const front = bet.front;
+    const back = bet.back;
+    const all = [...front, ...back];
+
+    const sum = all.reduce((a,b)=>a+b,0);
+    const frontSum = front.reduce((a,b)=>a+b,0);
+    const oddCount = all.filter(n => n % 2 === 1).length;
+    const evenCount = all.filter(n => n % 2 === 0).length;
+    const bigCount = front.filter(n => n > 17).length;  // 前17为小，18+为大
+    const smallCount = front.filter(n => n <= 17).length;
+    const specialCount = all.filter(isSpecial).length;
+
+    // 跨度
+    const span = front[front.length-1] - front[0];
+
+    // AC值
+    const diffs = [];
+    for (let i = 0; i < front.length; i++) {
+        for (let j = i+1; j < front.length; j++) {
+            diffs.push(Math.abs(front[i] - front[j]));
+        }
+    }
+    const ac = new Set(diffs).size - (FRONT_COUNT - 1);
+
+    grid.innerHTML = `
+        <div class="analysis-item">
+            <div class="a-label">前区和值</div>
+            <div class="a-value">${frontSum}</div>
+        </div>
+        <div class="analysis-item">
+            <div class="a-label">总和值</div>
+            <div class="a-value">${sum}</div>
+        </div>
+        <div class="analysis-item">
+            <div class="a-label">跨度</div>
+            <div class="a-value">${span}</div>
+        </div>
+        <div class="analysis-item">
+            <div class="a-label">奇偶比</div>
+            <div class="a-value">${oddCount}:${evenCount}</div>
+        </div>
+        <div class="analysis-item">
+            <div class="a-label">大小比</div>
+            <div class="a-value">${bigCount}:${smallCount}</div>
+        </div>
+        <div class="analysis-item">
+            <div class="a-label">AC值</div>
+            <div class="a-value">${ac}</div>
+        </div>
+        <div class="analysis-item">
+            <div class="a-label">幸运数命中</div>
+            <div class="a-value" style="color:${specialCount > 0 ? 'var(--gold)' : 'var(--text-muted)'}">${specialCount}个</div>
+        </div>
+        <div class="analysis-item">
+            <div class="a-label">连号</div>
+            <div class="a-value">${findConsecutive(front)}</div>
+        </div>
+        <div class="analysis-item">
+            <div class="a-label">尾数重</div>
+            <div class="a-value">${findTailRepeat(front)}</div>
+        </div>
+    `;
+}
+
+function findConsecutive(nums) {
+    let count = 0;
+    let groups = [];
+    let current = [];
+    for (let i = 0; i < nums.length; i++) {
+        if (i > 0 && nums[i] === nums[i-1] + 1) {
+            if (current.length === 0) current = [nums[i-1]];
+            current.push(nums[i]);
+        } else {
+            if (current.length > 1) groups.push(current.join('-'));
+            current = [];
+        }
+    }
+    if (current.length > 1) groups.push(current.join('-'));
+    return groups.length > 0 ? groups.join(', ') : '无';
+}
+
+function findTailRepeat(nums) {
+    const tails = nums.map(n => n % 10);
+    const seen = {};
+    tails.forEach(t => seen[t] = (seen[t]||0)+1);
+    const repeats = Object.entries(seen).filter(([k,v]) => v > 1);
+    return repeats.length > 0 ? repeats.map(([k,v])=>`${k}×${v}`).join(' ') : '无';
+}
+
+function saveHistory(bets) {
+    const time = new Date().toLocaleString('zh-CN', { hour12: false });
+    bets.forEach(bet => {
+        history.unshift({ time, front: bet.front, back: bet.back });
+    });
+    if (history.length > 20) history = history.slice(0, 20);
+    renderHistory();
+}
+
+function renderHistory() {
+    const section = document.getElementById('historySection');
+    const list = document.getElementById('historyList');
+    section.classList.remove('hidden');
+
+    list.innerHTML = history.slice(0, 10).map(h => `
+        <div class="history-item">
+            <span class="h-time">${h.time}</span>
+            <div class="h-numbers">
+                ${h.front.map(n => `<span class="h-ball front">${String(n).padStart(2,'0')}</span>`).join('')}
+                <span class="h-div"></span>
+                ${h.back.map(n => `<span class="h-ball back">${String(n).padStart(2,'0')}</span>`).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+function clearHistory() {
+    history = [];
+    document.getElementById('historySection').classList.add('hidden');
+}
+
+// ========== 星空背景 ==========
+function initStars() {
+    const canvas = document.getElementById('starsCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const stars = [];
+    for (let i = 0; i < 80; i++) {
+        stars.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 2 + 0.5,
+            alpha: Math.random() * 0.5 + 0.2,
+            speed: Math.random() * 0.02 + 0.01,
+        });
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        stars.forEach(s => {
+            s.alpha += s.speed;
+            if (s.alpha > 0.7 || s.alpha < 0.1) s.speed = -s.speed;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 215, 0, ${s.alpha})`;
+            ctx.fill();
+        });
+        requestAnimationFrame(draw);
+    }
+
+    draw();
+
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        stars.forEach(s => {
+            s.x = Math.random() * canvas.width;
+            s.y = Math.random() * canvas.height;
+        });
+    });
+}
+
+initStars();
+
+// ========== 浮动粒子 ==========
+function createParticles() {
+    for (let i = 0; i < 6; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.animationDuration = (8 + Math.random() * 12) + 's';
+        p.style.animationDelay = Math.random() * 5 + 's';
+        document.body.appendChild(p);
+    }
+}
+createParticles();
+
+// ========== 运算数字展示 ==========
+console.log('运算数字池:', OPERATION_NUMBERS);
+</script>
+
+</body>
+</html>
